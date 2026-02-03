@@ -92,6 +92,7 @@ namespace AnimalKitchen
             if (started)
             {
                 SetState(StaffState.Working);
+                ShowSpeechBubble($"Cooking: {currentCustomer.OrderedRecipe.recipeName}", 3f);
                 StartCoroutine(WaitForCookingComplete());
             }
         }
@@ -104,10 +105,24 @@ namespace AnimalKitchen
             {
                 yield return new WaitForSeconds(0.5f);
 
-                var completedOrder = restaurant.Kitchen.TakeCompletedOrder();
-                if (completedOrder != null && completedOrder.customer == currentCustomer)
+                // Check if our order is completed
+                bool orderCompleted = false;
+                foreach (var order in restaurant.Kitchen.ActiveOrders)
                 {
-                    DeliverFood();
+                    if (order.customer == currentCustomer && order.isCompleted)
+                    {
+                        orderCompleted = true;
+                        break;
+                    }
+                }
+
+                if (orderCompleted)
+                {
+                    // Food is ready, stay at kitchen and go back to idle
+                    Debug.Log($"[{data?.staffName ?? "Chef"}] Finished cooking for customer, staying at kitchen");
+                    ShowSpeechBubble("Food ready!", 2f);
+                    currentCustomer = null;
+                    SetState(StaffState.Idle);
                     yield break;
                 }
 
@@ -118,29 +133,6 @@ namespace AnimalKitchen
                     yield break;
                 }
             }
-        }
-
-        private void DeliverFood()
-        {
-            if (currentCustomer != null && currentCustomer.AssignedTable != null)
-            {
-                MoveTo(currentCustomer.AssignedTable.FoodPosition.position);
-                StartCoroutine(DeliverAndReturn());
-            }
-        }
-
-        private IEnumerator DeliverAndReturn()
-        {
-            while (isMoving)
-            {
-                yield return null;
-            }
-
-            currentCustomer?.ReceiveFood();
-            Debug.Log($"[{data.staffName}] Delivered food to customer");
-
-            currentCustomer = null;
-            SetState(StaffState.Idle);
         }
 
         public override void DoWork()

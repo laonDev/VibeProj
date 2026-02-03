@@ -15,6 +15,8 @@ namespace AnimalKitchen
         [Header("Components")]
         [SerializeField] protected SpriteRenderer spriteRenderer;
 
+        protected SpeechBubble speechBubble;
+
         public StaffData Data => data;
         public int Level => level;
         public StaffState CurrentState => currentState;
@@ -35,6 +37,12 @@ namespace AnimalKitchen
             if (spriteRenderer != null && data.portrait != null)
             {
                 spriteRenderer.sprite = data.portrait;
+            }
+
+            // Create speech bubble
+            if (speechBubble == null)
+            {
+                speechBubble = SpeechBubble.Create(transform);
             }
 
             SetState(StaffState.Idle);
@@ -103,6 +111,24 @@ namespace AnimalKitchen
                 return true;
             }
             return false;
+        }
+
+        protected void ShowSpeechBubble(string message, float duration = 2f)
+        {
+            if (speechBubble == null)
+            {
+                speechBubble = SpeechBubble.Create(transform);
+            }
+
+            speechBubble.Show(message, transform, duration);
+        }
+
+        protected void HideSpeechBubble()
+        {
+            if (speechBubble != null)
+            {
+                speechBubble.Hide();
+            }
         }
 
         public abstract void DoWork();

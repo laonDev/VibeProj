@@ -20,6 +20,8 @@ namespace AnimalKitchen
         [Header("Components")]
         [SerializeField] private SpriteRenderer spriteRenderer;
 
+        private SpeechBubble speechBubble;
+
         public CustomerData Data => data;
         public CustomerState CurrentState => currentState;
         public float RemainingPatience => remainingPatience;
@@ -43,6 +45,12 @@ namespace AnimalKitchen
             if (spriteRenderer != null && data.portrait != null)
             {
                 spriteRenderer.sprite = data.portrait;
+            }
+
+            // Create speech bubble
+            if (speechBubble == null)
+            {
+                speechBubble = SpeechBubble.Create(transform);
             }
 
             SetState(CustomerState.Entering);
@@ -167,6 +175,7 @@ namespace AnimalKitchen
                 if (orderedRecipe != null)
                 {
                     OnOrderPlaced?.Invoke(this);
+                    ShowSpeechBubble($"I want {orderedRecipe.recipeName}!", 3f);
                     SetState(CustomerState.WaitingForFood);
                     Debug.Log($"[Customer] Ordered: {orderedRecipe.recipeName}");
                 }
@@ -177,6 +186,7 @@ namespace AnimalKitchen
         {
             if (currentState != CustomerState.WaitingForFood) return;
 
+            ShowSpeechBubble("Yummy!", 2f);
             SetState(CustomerState.Eating);
             Debug.Log("[Customer] Received food, starting to eat");
         }
@@ -192,6 +202,7 @@ namespace AnimalKitchen
             ResourceManager.Instance?.AddGold(total);
             OnPaymentComplete?.Invoke(this, bill, tip);
 
+            ShowSpeechBubble($"Here's ${total}!", 2f);
             Debug.Log($"[Customer] Paid {bill} + {tip} tip = {total} gold");
 
             LeaveHappy();
@@ -207,6 +218,7 @@ namespace AnimalKitchen
         private void LeaveAngry()
         {
             assignedTable?.Free();
+            ShowSpeechBubble("Too slow!", 2f);
             SetState(CustomerState.Leaving);
             MoveTo(GameManager.Instance.CurrentRestaurant.Exit.position);
             Debug.Log("[Customer] Left angry due to timeout!");
@@ -215,6 +227,24 @@ namespace AnimalKitchen
         public void WaitForSeat()
         {
             SetState(CustomerState.WaitingForSeat);
+        }
+
+        private void ShowSpeechBubble(string message, float duration = 2f)
+        {
+            if (speechBubble == null)
+            {
+                speechBubble = SpeechBubble.Create(transform);
+            }
+
+            speechBubble.Show(message, transform, duration);
+        }
+
+        private void HideSpeechBubble()
+        {
+            if (speechBubble != null)
+            {
+                speechBubble.Hide();
+            }
         }
     }
 }

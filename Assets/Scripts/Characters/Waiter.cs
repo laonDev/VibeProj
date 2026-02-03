@@ -28,11 +28,13 @@ namespace AnimalKitchen
 
         protected override void OnReachedDestination()
         {
+            // If carrying food, we're at the table - serve it
             if (carryingFood != null && currentCustomer != null)
             {
                 ServeFood();
             }
-            else if (currentCustomer != null)
+            // If not carrying food but have a customer, we're at the kitchen - pick up food
+            else if (currentCustomer != null && carryingFood == null)
             {
                 PickUpFood();
             }
@@ -43,6 +45,7 @@ namespace AnimalKitchen
             var restaurant = GameManager.Instance?.CurrentRestaurant;
             if (restaurant == null) return;
 
+            // Check if there are completed orders
             if (restaurant.Kitchen.HasCompletedOrders())
             {
                 // Find most urgent completed order (lowest patience)
@@ -61,21 +64,13 @@ namespace AnimalKitchen
                     }
                 }
 
-                // Take the urgent order
+                // If found urgent order, go to kitchen to pick it up
                 if (urgentOrder != null)
                 {
-                    var completedOrder = restaurant.Kitchen.TakeCompletedOrder();
-                    if (completedOrder != null)
-                    {
-                        currentCustomer = completedOrder.customer;
-                        carryingFood = completedOrder.recipe;
-
-                        if (currentCustomer != null && currentCustomer.AssignedTable != null)
-                        {
-                            MoveTo(currentCustomer.AssignedTable.FoodPosition.position);
-                        }
-                        return;
-                    }
+                    currentCustomer = urgentOrder.customer;
+                    Debug.Log($"[{data?.staffName ?? "Waiter"}] Going to kitchen to pick up food for customer");
+                    MoveTo(restaurant.Kitchen.transform.position);
+                    SetState(StaffState.Walking);
                 }
             }
         }
@@ -85,16 +80,28 @@ namespace AnimalKitchen
             var restaurant = GameManager.Instance?.CurrentRestaurant;
             if (restaurant == null) return;
 
+            // Take completed order from kitchen
             var completedOrder = restaurant.Kitchen.TakeCompletedOrder();
             if (completedOrder != null)
             {
                 carryingFood = completedOrder.recipe;
                 currentCustomer = completedOrder.customer;
 
+                Debug.Log($"[{data?.staffName ?? "Waiter"}] Picked up food from kitchen, going to customer table");
+                ShowSpeechBubble($"Delivering: {carryingFood.recipeName}", 2f);
+
                 if (currentCustomer != null && currentCustomer.AssignedTable != null)
                 {
                     MoveTo(currentCustomer.AssignedTable.FoodPosition.position);
+                    SetState(StaffState.Walking);
                 }
+            }
+            else
+            {
+                // No food to pick up, go back to idle
+                Debug.LogWarning($"[{data?.staffName ?? "Waiter"}] Reached kitchen but no food to pick up");
+                currentCustomer = null;
+                SetState(StaffState.Idle);
             }
         }
 
@@ -104,6 +111,7 @@ namespace AnimalKitchen
             {
                 currentCustomer.ReceiveFood();
                 Debug.Log($"[{data.staffName}] Served food to customer");
+                ShowSpeechBubble("Bon appetit!", 2f);
             }
 
             carryingFood = null;
