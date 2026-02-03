@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30b40cee2cb7054429e06293e4e46d7a, type: 3}
+  m_Name: Customer_Cat
+  m_EditorClassIdentifier: 
+  customerName: Customer Cat
+  animalType: 0
+  portrait: {fileID: 0}
+  animator: {fileID: 0}
+  patience: 60
+  moveSpeed: 2
+  eatDuration: 10
+  preferredCategories: 
+  baseTipRate: 0.1
+  maxBonusTipRate: 0.2
