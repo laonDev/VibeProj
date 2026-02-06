@@ -11,6 +11,7 @@ namespace AnimalKitchen
 
         private Customer currentCustomer;
         private RecipeData carryingFood;
+        private GameObject carryingFoodObject;
         private float checkTimer;
 
         protected override void UpdateBehavior()
@@ -56,7 +57,18 @@ namespace AnimalKitchen
                 {
                     if (order.isCompleted && order.customer != null)
                     {
-                        if (order.customer.PatiencePercent < lowestPatience)
+                        // Check if another waiter is already handling this order
+                        bool alreadyHandled = false;
+                        foreach (var staff in restaurant.HiredStaff)
+                        {
+                            if (staff is Waiter waiter && waiter != this && waiter.GetCurrentCustomer() == order.customer)
+                            {
+                                alreadyHandled = true;
+                                break;
+                            }
+                        }
+
+                        if (!alreadyHandled && order.customer.PatiencePercent < lowestPatience)
                         {
                             lowestPatience = order.customer.PatiencePercent;
                             urgentOrder = order;
@@ -86,6 +98,15 @@ namespace AnimalKitchen
             {
                 carryingFood = completedOrder.recipe;
                 currentCustomer = completedOrder.customer;
+                carryingFoodObject = completedOrder.foodObject;
+
+                // Attach food object to waiter
+                if (carryingFoodObject != null)
+                {
+                    carryingFoodObject.transform.SetParent(transform);
+                    carryingFoodObject.transform.localPosition = Vector3.up * 0.5f; // Above waiter
+                    Debug.Log($"[{data?.staffName ?? "Waiter"}] Attached food object to waiter");
+                }
 
                 Debug.Log($"[{data?.staffName ?? "Waiter"}] Picked up food from kitchen, going to customer table");
                 ShowSpeechBubble($"Delivering: {carryingFood.recipeName}", 2f);
@@ -109,12 +130,21 @@ namespace AnimalKitchen
         {
             if (currentCustomer != null)
             {
-                currentCustomer.ReceiveFood();
+                // Place food on table
+                if (carryingFoodObject != null && currentCustomer.AssignedTable != null)
+                {
+                    carryingFoodObject.transform.SetParent(null); // Detach from waiter
+                    carryingFoodObject.transform.position = currentCustomer.AssignedTable.FoodPosition.position;
+                    Debug.Log($"[{data.staffName}] Placed food on table at {carryingFoodObject.transform.position}");
+                }
+
+                currentCustomer.ReceiveFood(carryingFoodObject);
                 Debug.Log($"[{data.staffName}] Served food to customer");
                 ShowSpeechBubble("Bon appetit!", 2f);
             }
 
             carryingFood = null;
+            carryingFoodObject = null;
             currentCustomer = null;
             SetState(StaffState.Idle);
         }
@@ -122,6 +152,11 @@ namespace AnimalKitchen
         public override void DoWork()
         {
             TryFindWork();
+        }
+
+        public Customer GetCurrentCustomer()
+        {
+            return currentCustomer;
         }
     }
 }

@@ -50,12 +50,27 @@ namespace AnimalKitchen
                     {
                         // Check if this customer is already being cooked for
                         bool alreadyCooking = false;
+
+                        // Check in active orders (including completed orders waiting for waiter)
                         foreach (var order in restaurant.Kitchen.ActiveOrders)
                         {
                             if (order.customer == customer)
                             {
                                 alreadyCooking = true;
                                 break;
+                            }
+                        }
+
+                        // Also check if any chef is already assigned to this customer
+                        if (!alreadyCooking)
+                        {
+                            foreach (var staff in restaurant.HiredStaff)
+                            {
+                                if (staff is Chef chef && chef != this && chef.GetCurrentCustomer() == customer)
+                                {
+                                    alreadyCooking = true;
+                                    break;
+                                }
                             }
                         }
 
@@ -83,6 +98,19 @@ namespace AnimalKitchen
             var restaurant = GameManager.Instance?.CurrentRestaurant;
             if (restaurant == null) return;
 
+            // CRITICAL: Re-check if this customer already has any order (including completed ones waiting for waiter)
+            // This prevents race conditions when multiple chefs move to kitchen simultaneously
+            foreach (var order in restaurant.Kitchen.ActiveOrders)
+            {
+                if (order.customer == currentCustomer)
+                {
+                    Debug.LogWarning($"[{data?.staffName ?? "Chef"}] Customer already has an order in kitchen, aborting");
+                    currentCustomer = null;
+                    SetState(StaffState.Idle);
+                    return;
+                }
+            }
+
             bool started = restaurant.Kitchen.StartCooking(
                 currentCustomer.OrderedRecipe,
                 currentCustomer,
@@ -94,6 +122,13 @@ namespace AnimalKitchen
                 SetState(StaffState.Working);
                 ShowSpeechBubble($"Cooking: {currentCustomer.OrderedRecipe.recipeName}", 3f);
                 StartCoroutine(WaitForCookingComplete());
+            }
+            else
+            {
+                // Failed to start cooking (no slots available), reset and go idle
+                Debug.LogWarning($"[{data?.staffName ?? "Chef"}] Failed to start cooking, no slots available");
+                currentCustomer = null;
+                SetState(StaffState.Idle);
             }
         }
 
@@ -138,6 +173,11 @@ namespace AnimalKitchen
         public override void DoWork()
         {
             TryFindWork();
+        }
+
+        public Customer GetCurrentCustomer()
+        {
+            return currentCustomer;
         }
     }
 }

@@ -21,6 +21,7 @@ namespace AnimalKitchen
         [SerializeField] private SpriteRenderer spriteRenderer;
 
         private SpeechBubble speechBubble;
+        private GameObject receivedFoodObject;
 
         public CustomerData Data => data;
         public CustomerState CurrentState => currentState;
@@ -182,10 +183,11 @@ namespace AnimalKitchen
             }
         }
 
-        public void ReceiveFood()
+        public void ReceiveFood(GameObject foodObject = null)
         {
             if (currentState != CustomerState.WaitingForFood) return;
 
+            receivedFoodObject = foodObject;
             ShowSpeechBubble("Yummy!", 2f);
             SetState(CustomerState.Eating);
             Debug.Log("[Customer] Received food, starting to eat");
@@ -201,6 +203,14 @@ namespace AnimalKitchen
 
             ResourceManager.Instance?.AddGold(total);
             OnPaymentComplete?.Invoke(this, bill, tip);
+
+            // Remove food object after eating
+            if (receivedFoodObject != null)
+            {
+                Destroy(receivedFoodObject);
+                receivedFoodObject = null;
+                Debug.Log("[Customer] Removed food object after eating");
+            }
 
             ShowSpeechBubble($"Here's ${total}!", 2f);
             Debug.Log($"[Customer] Paid {bill} + {tip} tip = {total} gold");
@@ -218,6 +228,15 @@ namespace AnimalKitchen
         private void LeaveAngry()
         {
             assignedTable?.Free();
+
+            // Remove food object if customer leaves angry
+            if (receivedFoodObject != null)
+            {
+                Destroy(receivedFoodObject);
+                receivedFoodObject = null;
+                Debug.Log("[Customer] Removed food object (left angry)");
+            }
+
             ShowSpeechBubble("Too slow!", 2f);
             SetState(CustomerState.Leaving);
             MoveTo(GameManager.Instance.CurrentRestaurant.Exit.position);

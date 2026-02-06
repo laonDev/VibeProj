@@ -29,11 +29,11 @@ namespace AnimalKitchen
         [ContextMenu("Setup Game")]
         public void SetupGame()
         {
-            SetupManagers();
-            SetupUI();
+            // SetupManagers();
+            // SetupUI();
             SetupRestaurant();
             SetupCustomerSpawner();
-            SetupCamera();
+            // SetupCamera();
 
             Debug.Log("[GameSetup] Game setup complete!");
         }
@@ -53,6 +53,11 @@ namespace AnimalKitchen
             var restaurant = FindObjectOfType<Restaurant>();
             if (restaurant != null)
             {
+                // Entrance
+                CreateEntrance(restaurant.transform);
+
+                // Exit
+                CreateExit(restaurant.transform);
                 CreateKitchen(restaurant.transform);
                 Debug.Log("[GameSetup] Kitchen rebuilt successfully!");
             }
@@ -321,14 +326,10 @@ namespace AnimalKitchen
                 restaurant = restaurantGO.AddComponent<Restaurant>();
 
                 // Entrance
-                var entrance = new GameObject("Entrance");
-                entrance.transform.SetParent(restaurantGO.transform);
-                entrance.transform.localPosition = new Vector3(-5, 0, 0);
+                CreateEntrance(restaurantGO.transform);
 
                 // Exit
-                var exit = new GameObject("Exit");
-                exit.transform.SetParent(restaurantGO.transform);
-                exit.transform.localPosition = new Vector3(5, 0, 0);
+                CreateExit(restaurantGO.transform);
 
                 // Kitchen
                 CreateKitchen(restaurantGO.transform);
@@ -423,6 +424,118 @@ namespace AnimalKitchen
             var kitchenUI = kitchenGO.AddComponent<KitchenUI>();
 
             Debug.Log("[GameSetup] Kitchen created with 3 cooking stations");
+        }
+
+        private void CreateEntrance(Transform parent)
+        {
+            var entranceGO = new GameObject("Entrance");
+            entranceGO.transform.SetParent(parent);
+            entranceGO.transform.localPosition = new Vector3(-5, 0, 0);
+
+            // Create door visual (Quad)
+            var doorGO = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            doorGO.name = "EntranceDoor";
+            doorGO.transform.SetParent(entranceGO.transform);
+            doorGO.transform.localPosition = Vector3.zero;
+            doorGO.transform.localScale = new Vector3(1.5f, 2f, 1f);
+
+            var doorRenderer = doorGO.GetComponent<Renderer>();
+            if (doorRenderer != null)
+            {
+                doorRenderer.material.color = new Color(0.3f, 0.8f, 0.3f, 0.8f); // Green for entrance
+            }
+
+            // Remove collider
+            var doorCollider = doorGO.GetComponent<Collider>();
+            if (doorCollider != null) DestroyImmediate(doorCollider);
+
+            // Create arrow visual (pointing inward)
+            var arrowGO = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            arrowGO.name = "EntranceArrow";
+            arrowGO.transform.SetParent(entranceGO.transform);
+            arrowGO.transform.localPosition = new Vector3(0.3f, 0, 0);
+            arrowGO.transform.localScale = new Vector3(0.3f, 0.5f, 0.1f);
+            arrowGO.transform.localRotation = Quaternion.Euler(0, 0, -90f); // Point right (into restaurant)
+
+            var arrowRenderer = arrowGO.GetComponent<Renderer>();
+            if (arrowRenderer != null)
+            {
+                arrowRenderer.material.color = new Color(0.2f, 1f, 0.2f); // Bright green
+            }
+
+            var arrowCollider = arrowGO.GetComponent<Collider>();
+            if (arrowCollider != null) DestroyImmediate(arrowCollider);
+
+            // Create text label
+            var textGO = new GameObject("EntranceText");
+            textGO.transform.SetParent(entranceGO.transform);
+            textGO.transform.localPosition = new Vector3(0, -1.2f, 0);
+            textGO.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+
+            var textMesh = textGO.AddComponent<TextMesh>();
+            textMesh.text = "ENTRANCE";
+            textMesh.fontSize = 20;
+            textMesh.alignment = TextAlignment.Center;
+            textMesh.anchor = TextAnchor.MiddleCenter;
+            textMesh.color = new Color(0.2f, 1f, 0.2f);
+
+            Debug.Log("[GameSetup] Entrance created with visual elements");
+        }
+
+        private void CreateExit(Transform parent)
+        {
+            var exitGO = new GameObject("Exit");
+            exitGO.transform.SetParent(parent);
+            exitGO.transform.localPosition = new Vector3(5, 0, 0);
+
+            // Create door visual (Quad)
+            var doorGO = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            doorGO.name = "ExitDoor";
+            doorGO.transform.SetParent(exitGO.transform);
+            doorGO.transform.localPosition = Vector3.zero;
+            doorGO.transform.localScale = new Vector3(1.5f, 2f, 1f);
+
+            var doorRenderer = doorGO.GetComponent<Renderer>();
+            if (doorRenderer != null)
+            {
+                doorRenderer.material.color = new Color(0.8f, 0.3f, 0.3f, 0.8f); // Red for exit
+            }
+
+            // Remove collider
+            var doorCollider = doorGO.GetComponent<Collider>();
+            if (doorCollider != null) DestroyImmediate(doorCollider);
+
+            // Create arrow visual (pointing outward)
+            var arrowGO = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            arrowGO.name = "ExitArrow";
+            arrowGO.transform.SetParent(exitGO.transform);
+            arrowGO.transform.localPosition = new Vector3(-0.3f, 0, 0);
+            arrowGO.transform.localScale = new Vector3(0.3f, 0.5f, 0.1f);
+            arrowGO.transform.localRotation = Quaternion.Euler(0, 0, 90f); // Point left (out of restaurant)
+
+            var arrowRenderer = arrowGO.GetComponent<Renderer>();
+            if (arrowRenderer != null)
+            {
+                arrowRenderer.material.color = new Color(1f, 0.2f, 0.2f); // Bright red
+            }
+
+            var arrowCollider = arrowGO.GetComponent<Collider>();
+            if (arrowCollider != null) DestroyImmediate(arrowCollider);
+
+            // Create text label
+            var textGO = new GameObject("ExitText");
+            textGO.transform.SetParent(exitGO.transform);
+            textGO.transform.localPosition = new Vector3(0, -1.2f, 0);
+            textGO.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+
+            var textMesh = textGO.AddComponent<TextMesh>();
+            textMesh.text = "EXIT";
+            textMesh.fontSize = 20;
+            textMesh.alignment = TextAlignment.Center;
+            textMesh.anchor = TextAnchor.MiddleCenter;
+            textMesh.color = new Color(1f, 0.2f, 0.2f);
+
+            Debug.Log("[GameSetup] Exit created with visual elements");
         }
 
         private void CreateDefaultTables(Transform parent)
